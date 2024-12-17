@@ -1,10 +1,13 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import {  useRouter } from "expo-router";
+import { useEffect } from "react";
 
-export default function index() {
-  return (
-    <View>
-      <Text>index</Text>
-    </View>
-  )
+export default function Index() {
+
+  const router = useRouter()
+
+  useEffect(() => {
+    setTimeout(()=> {router.replace("/login")},0)
+  },[])
+
+  return null
 }
