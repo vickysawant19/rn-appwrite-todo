@@ -2,7 +2,7 @@ import { View, TextInput, Button, StyleSheet, Text } from 'react-native';
 import { useState } from 'react';
 
 export default function AuthForm({ onSubmit, buttonLabel, footerText, footerActionLabel, onFooterAction }) {
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '',name: "" });
 
   const handleChange = (key, value) => {
     setForm({ ...form, [key]: value });
@@ -10,6 +10,12 @@ export default function AuthForm({ onSubmit, buttonLabel, footerText, footerActi
 
   return (
     <View style={styles.form}>
+     {buttonLabel === "Sign Up" && <TextInput
+        placeholder="Name"
+        value={form.email}
+        onChangeText={(text) => handleChange('name', text)}
+        style={styles.input}
+      />}
       <TextInput
         placeholder="Email"
         value={form.email}

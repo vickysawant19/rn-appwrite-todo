@@ -1,13 +1,25 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import AuthForm from '../../components/AuthForm';
 import { useRouter } from 'expo-router';
+import appwriteService from '../../appwrite/service';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignupPage() {
   const router = useRouter();
+  const {user , setUser} = useAuth()
 
-  const handleSignup = (data) => {
-    console.log('Signup Data:', data);
-    // Add signup logic here
+  const handleSignup = async (data) => {
+
+   try {
+       const res = await appwriteService.createAccount(data)
+       if(res){
+          const userResp =  await appwriteService.createEmailSession(data)
+          setUser(userResp)
+          router.replace("/home")
+       }
+   } catch (error) {
+    Alert.alert("Create Account Error:", error.message)
+   }
   };
 
   return (

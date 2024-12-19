@@ -1,18 +1,22 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import AuthForm from '../../components/AuthForm';
 import { useRouter } from 'expo-router';
 import appwriteService from '../../appwrite/service';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const {user , setUser } = useAuth()
 
   const handleLogin = async (data) => {
-    console.log('Login Data:', data);
    try {
      const res = await appwriteService.createEmailSession(data)
-     console.log("res",res)
+     if(res){
+      setUser(res)
+      router.replace("/home")
+     }
    } catch (error) {
-    console.log(error)
+    Alert.alert("Login Error:", error.message)
    }
   };
 
