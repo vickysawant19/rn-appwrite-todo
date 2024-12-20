@@ -3,21 +3,37 @@ import AuthForm from '../../components/AuthForm';
 import { useRouter } from 'expo-router';
 import appwriteService from '../../appwrite/service';
 import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
+import Toast from 'react-native-toast-message';
 
 export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const {user , setUser } = useAuth()
+  const { user, setUser } = useAuth();
 
   const handleLogin = async (data) => {
-   try {
-     const res = await appwriteService.createEmailSession(data)
-     if(res){
-      setUser(res)
-      router.replace("/home")
-     }
-   } catch (error) {
-    Alert.alert("Login Error:", error.message)
-   }
+    try {
+      setIsLoading(true);
+      const res = await appwriteService.createEmailSession(data);
+      if (res) {
+        setUser(res);
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          text2: 'Welcome back!',
+        });
+        router.replace('/home');
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: error.message,
+      });
+      Alert.alert('Login Error:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -29,7 +45,9 @@ export default function LoginPage() {
         footerText="Don't have an account?"
         footerActionLabel="Sign up"
         onFooterAction={() => router.push('/signup')}
+        isLoading={isLoading}
       />
+      <Toast />
     </View>
   );
 }
