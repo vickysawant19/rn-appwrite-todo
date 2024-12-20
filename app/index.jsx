@@ -7,7 +7,7 @@ export default function Index() {
 
   const router = useRouter()
   useEffect(()=> {
-    router.replace("/login")
+    setTimeout(() => router.replace("/login") ,0)
   }, [])
   return null
 }

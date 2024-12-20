@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -16,24 +17,31 @@ import { StatusBar } from "expo-status-bar";
 import todoSerives from "../../appwrite/todoService";
 
 export default function Home() {
-  const router = useRouter();
   const { user, setUser } = useAuth();
+
+  const router = useRouter();
+  const [todo, setTodo] = useState({
+    body: "",
+    userid: user.$id,
+    completed: false,
+  });
+  const [editTodo, setEditTodo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
 
+  const fetchTodo = async () => {
+    try {
+      setIsLoading(true);
+      const data = await todoSerives.getUserTodo(user.$id);
+      setData(data.documents.reverse());
+    } catch (error) {
+      console.log("error", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTodo = async () => {
-      try {
-        setIsLoading(true);
-        const data = await todoSerives.getUserTodo(user.$id);
-        setData(data);
-        console.log(data);
-      } catch (error) {
-        console.log("error", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchTodo();
   }, [user]);
 
@@ -47,16 +55,81 @@ export default function Home() {
     }
   };
 
+  const handleAddTodo = async () => {
+    if (todo.body.trim() === "") {
+      console.log("Empty todo not allowed");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const res = await todoSerives.addTodo(todo);
+      if (res) {
+        fetchTodo();
+      }
+    } catch (error) {
+      Alert.alert("AddTodo Error", error?.message || "Failed to Add Todo");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditSave = async (todo) => {
+    if(todo.body === editTodo.body) {
+      setEditTodo(null)
+      return
+    }
+    try {
+      const res = await todoSerives.updateTodo(editTodo)
+      fetchTodo()
+    } catch (error) {
+      console.log(error)
+    }finally{
+      setEditTodo(null)
+    }
+  };
+
+  const handleRemove = async (id) => {
+    try {
+      setIsLoading(true);
+      await todoSerives.removeTodo(id);
+      fetchTodo();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
   const renderTodo = (todo) => {
-    console.log(todo)
+    const editEnable = editTodo?.$id === todo.$id;
     return (
       <View style={styles.todoContainer}>
-        <TextInput style={styles.todoInputText} value={todo.body} />
+     <Pressable onLongPress={() => handleEditSave({...todo, completed: !todo.completed})}>
+     <TextInput
+          onChangeText={(text) => setEditTodo(prev => ({...prev, body: text}))}
+          style={[
+            styles.todoInputText,
+            todo.completed ? {textDecoration: "line-through"}: {textDecoration: "none"},
+            editEnable
+              ? { borderWidth: 1, borderColor: "grey", borderRadius: 10 }
+              : {borderWidth:1,borderColor: "white"},
+          ]}
+          value={editEnable ? editTodo.body : todo.body}
+          disabled={!editEnable}
+        />
+     </Pressable>
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <Pressable style={styles.editButton}>
-            <Text style={styles.editText}>Edit</Text>
+          <Pressable
+            onPress={() => (editEnable ? handleEditSave(todo) : setEditTodo(todo))}
+            style={styles.editButton}
+          >
+            <Text style={styles.editText}>{editEnable ? "Save" : "Edit"}</Text>
           </Pressable>
-          <Pressable style={styles.removeButton}>
+          <Pressable
+            onPress={() => handleRemove(todo.$id)}
+            style={styles.removeButton}
+          >
             <Text style={styles.removeText}>Remove</Text>
           </Pressable>
         </View>
@@ -76,16 +149,27 @@ export default function Home() {
         </Pressable>
       </View>
       <View style={styles.inputContainer}>
-        <TextInput style={styles.inputText} />
-        <Pressable style={[styles.button, { backgroundColor: "#5CB338" }]}>
+        <TextInput
+          value={todo.body}
+          onChangeText={(text) => setTodo((prev) => ({ ...prev, body: text }))}
+          style={styles.inputText}
+        />
+        <Pressable
+          onPress={handleAddTodo}
+          style={[styles.button, { backgroundColor: "#5CB338" }]}
+        >
           <Text style={[styles.buttonText]}>Add Todo</Text>
         </Pressable>
       </View>
-      <FlatList
-        data={data.documents}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => renderTodo(item)}
-      />
+      {!isLoading ? (
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => renderTodo(item)}
+        />
+      ) : (
+        <ActivityIndicator size={"large"} />
+      )}
       <StatusBar backgroundColor="auto" />
     </SafeAreaView>
   );
@@ -107,7 +191,7 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#FFFFFF", // White text for contrast
+    color: "#FFFFFF", 
   },
   button: {
     paddingHorizontal: 15,
@@ -127,18 +211,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
     borderRadius: 10,
-    // margin: 10,
     elevation: 2,
   },
   inputText: {
     flex: 1,
     fontSize: 18,
-    color: "#333333", // Dark gray for better readability
+    color: "#333333", 
     padding: 10,
-    backgroundColor: "#FFFFFF", // White for clear input focus
+    backgroundColor: "#FFFFFF", 
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#D1D5DB", // Light gray border
+    borderColor: "#D1D5DB", 
   },
   todoContainer: {
     flexDirection: "row",
@@ -146,20 +229,20 @@ const styles = StyleSheet.create({
     padding: 15,
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FFFFFF", // White for card-like design
+    backgroundColor: "#FFFFFF", 
     borderRadius: 10,
     marginHorizontal: 10,
     marginVertical: 5,
-    elevation: 3, // Shadow for card appearance
+    elevation: 3, 
   },
   todoInputText: {
     flex: 1,
     padding: 10,
     fontSize: 16,
-    color: "#555555", // Medium gray for contrast
+    color: "#555555", 
   },
   editButton: {
-    backgroundColor: "#36C3C1", // Fresh teal for edit action
+    backgroundColor: "#36C3C1", 
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -169,7 +252,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   removeButton: {
-    backgroundColor: "#EF4444", // Vibrant red for delete action
+    backgroundColor: "#EF4444",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
