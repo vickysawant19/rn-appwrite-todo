@@ -15,6 +15,9 @@ class Service {
     try {
       const response = await this.account.create(ID.unique(), email, password, name);
       // console.log("Account Created:", response);
+      if(response) {
+        this.createEmailSession({email, password})
+      }
       return response;
     } catch (error) {
       console.error("Error Creating Account:", error);
@@ -27,6 +30,10 @@ class Service {
     try {
       const response = await this.account.createEmailPasswordSession(email, password);
       // console.log("Session Created:", response);
+      if(response) {
+        const userData = this.getAccount()
+        return userData
+      }
       return response;
     } catch (error) {
       console.error("Error Creating Email Session:", error);

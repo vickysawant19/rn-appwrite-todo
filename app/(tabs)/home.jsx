@@ -22,7 +22,7 @@ export default function Home() {
   const router = useRouter();
   const [todo, setTodo] = useState({
     body: "",
-    userid: user.$id,
+    userid: user?.$id,
     completed: false,
   });
   const [editTodo, setEditTodo] = useState(null);
@@ -61,67 +61,71 @@ export default function Home() {
       return;
     }
     try {
-      setIsLoading(true);
       const res = await todoSerives.addTodo(todo);
+      setTodo({ ...todo, body: "" });
       if (res) {
         fetchTodo();
       }
     } catch (error) {
       Alert.alert("AddTodo Error", error?.message || "Failed to Add Todo");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleEditSave = async (todo) => {
-    if(todo.body === editTodo.body) {
-      setEditTodo(null)
-      return
+    if (todo.body === editTodo.body) {
+      setEditTodo(null);
+      return;
     }
     try {
-      const res = await todoSerives.updateTodo(editTodo)
-      fetchTodo()
+      const res = await todoSerives.updateTodo(editTodo);
+      fetchTodo();
     } catch (error) {
-      console.log(error)
-    }finally{
-      setEditTodo(null)
+      console.log(error);
+    } finally {
+      setEditTodo(null);
     }
   };
 
   const handleRemove = async (id) => {
     try {
-      setIsLoading(true);
       await todoSerives.removeTodo(id);
       fetchTodo();
     } catch (error) {
       console.log(error);
-    } finally {
-      setIsLoading(false);
     }
   };
-
 
   const renderTodo = (todo) => {
     const editEnable = editTodo?.$id === todo.$id;
     return (
       <View style={styles.todoContainer}>
-     <Pressable onLongPress={() => handleEditSave({...todo, completed: !todo.completed})}>
-     <TextInput
-          onChangeText={(text) => setEditTodo(prev => ({...prev, body: text}))}
-          style={[
-            styles.todoInputText,
-            todo.completed ? {textDecoration: "line-through"}: {textDecoration: "none"},
-            editEnable
-              ? { borderWidth: 1, borderColor: "grey", borderRadius: 10 }
-              : {borderWidth:1,borderColor: "white"},
-          ]}
-          value={editEnable ? editTodo.body : todo.body}
-          disabled={!editEnable}
-        />
-     </Pressable>
+        <Pressable
+          onLongPress={() =>
+            handleEditSave({ ...todo, completed: !todo.completed })
+          }
+        >
+          <TextInput
+            onChangeText={(text) =>
+              setEditTodo((prev) => ({ ...prev, body: text }))
+            }
+            style={[
+              styles.todoInputText,
+              todo.completed
+                ? { textDecoration: "line-through" }
+                : { textDecoration: "none" },
+              editEnable
+                ? { borderWidth: 1, borderColor: "grey", borderRadius: 10 }
+                : { borderWidth: 1, borderColor: "white" },
+            ]}
+            value={editEnable ? editTodo.body : todo.body}
+            disabled={!editEnable}
+          />
+        </Pressable>
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Pressable
-            onPress={() => (editEnable ? handleEditSave(todo) : setEditTodo(todo))}
+            onPress={() =>
+              editEnable ? handleEditSave(todo) : setEditTodo(todo)
+            }
             style={styles.editButton}
           >
             <Text style={styles.editText}>{editEnable ? "Save" : "Edit"}</Text>
@@ -136,11 +140,13 @@ export default function Home() {
       </View>
     );
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome,{user?.name || "Guest"}</Text>
+        <Text style={styles.welcome}>
+          Welcome,{" "}
+          {user?.name[0].toUpperCase() + user?.name.slice(1) || "Guest"}
+        </Text>
         <Pressable
           style={[styles.button, { backgroundColor: "#FB4141" }]}
           onPress={handleLogout}
@@ -164,8 +170,11 @@ export default function Home() {
       {!isLoading ? (
         <FlatList
           data={data}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.$id}
           renderItem={({ item }) => renderTodo(item)}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: "center" }}>No todos added!</Text>
+          )}
         />
       ) : (
         <ActivityIndicator size={"large"} />
@@ -191,7 +200,7 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#FFFFFF", 
+    color: "#FFFFFF",
   },
   button: {
     paddingHorizontal: 15,
@@ -216,12 +225,12 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     fontSize: 18,
-    color: "#333333", 
+    color: "#333333",
     padding: 10,
-    backgroundColor: "#FFFFFF", 
+    backgroundColor: "#FFFFFF",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#D1D5DB", 
+    borderColor: "#D1D5DB",
   },
   todoContainer: {
     flexDirection: "row",
@@ -229,20 +238,20 @@ const styles = StyleSheet.create({
     padding: 15,
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FFFFFF", 
+    backgroundColor: "#FFFFFF",
     borderRadius: 10,
     marginHorizontal: 10,
     marginVertical: 5,
-    elevation: 3, 
+    elevation: 3,
   },
   todoInputText: {
     flex: 1,
     padding: 10,
     fontSize: 16,
-    color: "#555555", 
+    color: "#555555",
   },
   editButton: {
-    backgroundColor: "#36C3C1", 
+    backgroundColor: "#36C3C1",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
