@@ -9,6 +9,7 @@ import appwriteService from '../appwrite/service';
 const AuthContext = createContext({})
 
 export default function AuthProvider({children}) {
+  const [error, setError] = useState(null)
   const [user , setUser ] = useState(null)
   const [isLoading , setIsLoading] = useState(true)
 
@@ -18,8 +19,10 @@ export default function AuthProvider({children}) {
            setIsLoading(true)
            const resp = await appwriteService.getAccount()
            setUser(resp)   
+           setError(null)
         } catch (error) {
             console.log(error)
+            setError(error)
         } finally{
             setIsLoading(false)
         }
@@ -28,7 +31,7 @@ export default function AuthProvider({children}) {
   } , [])
 
   return (
-    <AuthContext.Provider value={{user,setUser,isLoading,setIsLoading}}>
+    <AuthContext.Provider value={{user,setUser,isLoading,setIsLoading,error}}>
       {children}
     </AuthContext.Provider>
   )
